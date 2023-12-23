@@ -9,41 +9,61 @@ def get_separate_perm(mat):
     eigval, eigvec = spsp.linalg.eigsh(Laplacian, k=2, which="SM")
     colors = np.sign(eigvec[:, 1])
 
-    if eigval[1] < 1e-8:  # checks on not connected graph
-        return None
-
     # gets 3 sets, where gamma - separator
-    gamma = set()
-    for k in range(0, len(Laplacian.row)):
-        i = Laplacian.row[k]
-        j = Laplacian.col[k]
-        if j > i and colors[i] != colors[j]:
-            gamma.add(i)
-            gamma.add(j)
-    gamma = np.array(list(gamma))
-    beta = np.setdiff1d(np.where(colors > 0), gamma)
-    alpha = np.setdiff1d(np.where(colors < 0), gamma)
-    a, b, g = len(alpha), len(beta), len(gamma)
+    if eigval[1] < 1e-8:  # checks on not connected graph
+        alpha = spsp.csgraph.depth_first_order(Laplacian, 0, return_predecessors=False)
+        beta = np.setdiff1d(np.arange(0, len(colors)), alpha)
+        gamma = np.array([])
+    else:
+        gamma = set()
+        for k in range(0, len(Laplacian.row)):
+            i = Laplacian.row[k]
+            j = Laplacian.col[k]
+            if j > i and colors[i] != colors[j]:
+                gamma.add(i)
+                gamma.add(j)
+        gamma = np.array(list(gamma))
+        beta = np.setdiff1d(np.where(colors > 0), gamma)
+        alpha = np.setdiff1d(np.where(colors < 0), gamma)
 
     # creates permutation based on sets
+    a, b, g = len(alpha), len(beta), len(gamma)
     P = np.zeros(len(colors), dtype=np.int32)
     start = 0
     P[alpha] = np.arange(start, start + len(alpha))
     start += len(alpha)
-    P[beta] = np.arange(start, start + len(beta))
+    if b > 0: P[beta] = np.arange(start, start + len(beta))
     start += len(beta)
-    P[gamma] = np.arange(start, start + len(gamma))
+    if g > 0: P[gamma] = np.arange(start, start + len(gamma))
     P = P.argsort()
     return P, a, b, g
 
-G = nx.read_gml('karate.gml')
-A = spsp.csr_matrix(nx.to_scipy_sparse_array(G))
 
-P, a, b, g = get_separate_perm(A)
-A = (A.toarray()[P, :])[:, P]
+def print_(A, a, b):
+    print("alpha,alpha = ", spsp.linalg.norm(A[:a, :a], ord='fro'))
+    print("beta,beta = ", spsp.linalg.norm(A[a:(a + b), a:(a + b)], ord='fro'))
+    print("gamma,gamma = ", spsp.linalg.norm(A[(a + b):, (a + b):], ord='fro'))
+    print("alpha,beta = ", spsp.linalg.norm(A[:a, a:(a + b)], ord='fro'))
+    print("beta,alpha = ", spsp.linalg.norm(A[a:(a + b), :a], ord='fro'))
 
-print("alpha,alpha = ", np.linalg.norm(A[:a, :a], ord='fro'))
-print("beta,beta = ", np.linalg.norm(A[a:(a+b), a:(a+b)], ord='fro'))
-print("gamma,gamma = ", np.linalg.norm(A[(a+b):, (a+b):], ord='fro'))
-print("alpha,beta = ", np.linalg.norm(A[:a, a:(a+b)], ord='fro'))
-print("beta,alpha = ", np.linalg.norm(A[a:(a+b), :a], ord='fro'))
+
+if __name__ == '__main__':
+    # case 1: connected graph
+    G = nx.read_gml('karate.gml')
+    A = nx.to_scipy_sparse_array(G)
+    P, a, b, g = get_separate_perm(A)
+    A = (A[P, :])[:, P]  # apply perm on column and rows
+    print_(A, a, b)
+
+    # case 2: not connected graph
+    A = spsp.csr_matrix([
+        [1,1,0,1,0,0],
+        [1,1,0,1,0,0],
+        [0,0,1,0,1,1],
+        [1,1,0,1,0,0],
+        [0,0,1,0,1,1],
+        [0,0,1,0,1,1]
+    ])
+    P, a, b, g = get_separate_perm(A)
+    A = (A[P, :])[:, P]
+    print_(A, a, b)
