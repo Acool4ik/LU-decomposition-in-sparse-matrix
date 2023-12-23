@@ -1,6 +1,11 @@
 import numpy as np
 import scipy.sparse as spsp
 import networkx as nx
+import matplotlib.pyplot as plt
+
+
+def lu_iter(A, i, j, n):
+    return A
 
 
 def get_separate_perm(mat):
@@ -28,42 +33,43 @@ def get_separate_perm(mat):
 
     # creates permutation based on sets
     a, b, g = len(alpha), len(beta), len(gamma)
-    P = np.zeros(len(colors), dtype=np.int32)
     start = 0
-    P[alpha] = np.arange(start, start + len(alpha))
-    start += len(alpha)
-    if b > 0: P[beta] = np.arange(start, start + len(beta))
-    start += len(beta)
-    if g > 0: P[gamma] = np.arange(start, start + len(gamma))
+    P = np.zeros(len(colors), dtype=np.int32)
+    if a > 0: P[alpha] = np.arange(start, start + a)
+    start += a
+    if b > 0: P[beta] = np.arange(start, start + b)
+    start += b
+    if g > 0: P[gamma] = np.arange(start, start + g)
     P = P.argsort()
     return P, a, b, g
 
 
-def print_(A, a, b):
-    print("alpha,alpha = ", spsp.linalg.norm(A[:a, :a], ord='fro'))
-    print("beta,beta = ", spsp.linalg.norm(A[a:(a + b), a:(a + b)], ord='fro'))
-    print("gamma,gamma = ", spsp.linalg.norm(A[(a + b):, (a + b):], ord='fro'))
-    print("alpha,beta = ", spsp.linalg.norm(A[:a, a:(a + b)], ord='fro'))
-    print("beta,alpha = ", spsp.linalg.norm(A[a:(a + b), :a], ord='fro'))
+def rec_partitioning(A, i, n):
+    if n < 3:
+        return lu_iter(A, i, i, n)
+
+    P_local, a, b, g = get_separate_perm(A[i:(i+n), i:(i+n)])
+    P = np.arange(0, A.shape[0])
+    P[i:(i+n)] = P_local + i
+    A = A[P, :][:, P]
+
+    if a < n:
+        A = rec_partitioning(A, i, a)
+        A = lu_iter(A, i + a + b, i, g)
+    if b < n:
+        A = rec_partitioning(A, i + a, b)
+        A = lu_iter(A, i + a + b, i + a, g)
+    if g < n:
+        A = rec_partitioning(A, i + a + b, g)
+    return A
 
 
 if __name__ == '__main__':
-    # case 1: connected graph
-    G = nx.read_gml('karate.gml')
-    A = nx.to_scipy_sparse_array(G)
-    P, a, b, g = get_separate_perm(A)
-    A = (A[P, :])[:, P]  # apply perm on column and rows
-    print_(A, a, b)
-
-    # case 2: not connected graph
-    A = spsp.csr_matrix([
-        [1,1,0,1,0,0],
-        [1,1,0,1,0,0],
-        [0,0,1,0,1,1],
-        [1,1,0,1,0,0],
-        [0,0,1,0,1,1],
-        [0,0,1,0,1,1]
-    ])
-    P, a, b, g = get_separate_perm(A)
-    A = (A[P, :])[:, P]
-    print_(A, a, b)
+    A = nx.to_scipy_sparse_array(nx.read_gml('karate.gml'))
+    A = A + spsp.eye(A.shape[0])
+    A = rec_partitioning(A, 0, A.shape[0])
+    plt.spy(A, aspect='equal', marker='.', markersize=5)
+    plt.grid(True)
+    plt.xticks(np.arange(0, A.shape[0], step=2))
+    plt.yticks(np.arange(0, A.shape[0], step=2))
+    plt.show()
