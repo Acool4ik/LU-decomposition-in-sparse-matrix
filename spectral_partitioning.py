@@ -4,10 +4,6 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 
-def lu_iter(A, i, j, n):
-    return A
-
-
 def get_separate_perm(mat):
     # finds Fiedler vector
     Laplacian = spsp.csgraph.laplacian(mat, dtype=np.float32)
@@ -42,34 +38,3 @@ def get_separate_perm(mat):
     if g > 0: P[gamma] = np.arange(start, start + g)
     P = P.argsort()
     return P, a, b, g
-
-
-def rec_partitioning(A, i, n):
-    if n < 3:
-        return lu_iter(A, i, i, n)
-
-    P_local, a, b, g = get_separate_perm(A[i:(i+n), i:(i+n)])
-    P = np.arange(0, A.shape[0])
-    P[i:(i+n)] = P_local + i
-    A = A[P, :][:, P]
-
-    if a < n:
-        A = rec_partitioning(A, i, a)
-        A = lu_iter(A, i + a + b, i, g)
-    if b < n:
-        A = rec_partitioning(A, i + a, b)
-        A = lu_iter(A, i + a + b, i + a, g)
-    if g < n:
-        A = rec_partitioning(A, i + a + b, g)
-    return A
-
-
-if __name__ == '__main__':
-    A = nx.to_scipy_sparse_array(nx.read_gml('karate.gml'))
-    A = A + spsp.eye(A.shape[0])
-    A = rec_partitioning(A, 0, A.shape[0])
-    plt.spy(A, aspect='equal', marker='.', markersize=5)
-    plt.grid(True)
-    plt.xticks(np.arange(0, A.shape[0], step=2))
-    plt.yticks(np.arange(0, A.shape[0], step=2))
-    plt.show()
