@@ -1,17 +1,20 @@
 import numpy as np
 import scipy.sparse as spsp
 import networkx as nx
-import matplotlib.pyplot as plt
 
 
 def get_separate_perm(mat):
     # finds Fiedler vector
-    Laplacian = spsp.csgraph.laplacian(mat, dtype=np.float32)
+    G = nx.Graph(mat)
+    mat = nx.adjacency_matrix(G, weight=None)
+    G = nx.Graph(mat)
+    Laplacian = nx.laplacian_matrix(G).asfptype().tocoo()  # fix excessive copying!
+
     eigval, eigvec = spsp.linalg.eigsh(Laplacian, k=2, which="SM")
     colors = np.sign(eigvec[:, 1])
 
     # gets 3 sets, where gamma - separator
-    if eigval[1] < 1e-8:  # checks on not connected graph
+    if eigval[1] < 1e-6:  # checks on not connected graph
         alpha = spsp.csgraph.depth_first_order(Laplacian, 0, return_predecessors=False)
         beta = np.setdiff1d(np.arange(0, len(colors)), alpha)
         gamma = np.array([])

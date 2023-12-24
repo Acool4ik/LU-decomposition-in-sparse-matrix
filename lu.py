@@ -1,17 +1,15 @@
 import numpy as np
 import scipy.sparse as spsp
-import networkx as nx
-import matplotlib.pyplot as plt
 
 
 def lu_iter_(L, U, i, j, n, m):
     for k in range(j, j + m):
-        a = U.getrow(k).getcol(k).toarray()[0][0]
+        a = U[k, k]
         for row in range(max(i, k + 1), i + n):
-            b = U.getrow(row).getcol(k).toarray()[0][0]
+            b = U[row, k]
             if b != 0:
                 L.append((row, k, b / a))
-                U[row] = U.getrow(row) - b * (U.getrow(k) / a)
+                U[row] -= b * (U[k] / a)
 
 
 def rec_partitioning_(P, L, U, i, n, fseparate):
@@ -20,7 +18,7 @@ def rec_partitioning_(P, L, U, i, n, fseparate):
         return
 
     P_local, a, b, g = fseparate(U[i:(i+n), i:(i+n)])  # gets permutation for block-arrow shape
-    P_i = np.arange(0, U.shape[0])  # perm in i-th iteration
+    P_i = np.arange(0, U.shape[0], dtype=np.int32)  # perm in i-th iteration
     P_i[i:(i+n)] = P_local + i
     U[:] = U[P_i, :][:, P_i]  # apply permutation to U (inplace)
     P[:] = P[P_i]
@@ -36,21 +34,20 @@ def rec_partitioning_(P, L, U, i, n, fseparate):
 
 
 def rec_partitioning(A, fseparate, copy=True):
-    P = np.arange(0, A.shape[0])  # default perm
+    P = np.arange(0, A.shape[0], dtype=np.int32)  # default perm
     L = [(i, i, 1) for i in range(0, A.shape[0])]  # fills diagonal by 1
 
-    if copy: U = A.copy()
+    if copy: U = A.tolil(copy=True)
     else: U = A
 
     # P, L, U changes inplace
     rec_partitioning_(P, L, U, 0, A.shape[0], fseparate)
-
     P = np.argsort(P)  # applies transpose
 
     # create sparse matrix from coo list
     row = [L[i][0] for i in range(len(L))]
     col = [L[i][1] for i in range(len(L))]
     data = [L[i][2] for i in range(len(L))]
-    L = spsp.coo_matrix((data, (row, col)))
+    L = spsp.csr_matrix((data, (row, col)), dtype=A.dtype)
 
     return P, L, U

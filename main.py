@@ -9,11 +9,12 @@ import spectral_partitioning
 
 path_to_dataset = "./datasets/494_bus.mtx"
 #path_to_dataset = "./datasets/karate.gml"
+dtype = np.float64
 
 if __name__ == '__main__':
     # read data (graph)
-    A = spsp.csr_matrix(scipy.io.mmread(path_to_dataset))
-    #A = nx.to_scipy_sparse_array(nx.read_gml(path_to_dataset))
+    A = spsp.csr_matrix(scipy.io.mmread(path_to_dataset), dtype=dtype)
+    #A = spsp.csr_matrix(nx.to_scipy_sparse_array(nx.read_gml(path_to_dataset), dtype=dtype, format='csr'))
     #A = A + 5 * spsp.eye(A.shape[0])
 
     # gets decomposition
