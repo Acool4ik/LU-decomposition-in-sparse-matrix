@@ -14,10 +14,10 @@ def get_separate_perm(mat):
     colors = np.sign(eigvec[:, 1])
 
     # gets 3 sets, where gamma - separator
-    if eigval[1] < 1e-6:  # checks on not connected graph
+    if eigval[1] < 1e-5:  # checks on not connected graph
         alpha = spsp.csgraph.depth_first_order(Laplacian, 0, return_predecessors=False)
-        beta = np.setdiff1d(np.arange(0, len(colors)), alpha)
-        gamma = np.array([])
+        beta = np.setdiff1d(np.arange(0, len(colors), dtype=np.int32), alpha)
+        gamma = np.array([], dtype=np.int32)
     else:
         gamma = set()
         for k in range(0, len(Laplacian.row)):
@@ -26,18 +26,11 @@ def get_separate_perm(mat):
             if j > i and colors[i] != colors[j]:
                 gamma.add(i)
                 gamma.add(j)
-        gamma = np.array(list(gamma))
+        gamma = np.array(list(gamma), dtype=np.int32)
         beta = np.setdiff1d(np.where(colors > 0), gamma)
         alpha = np.setdiff1d(np.where(colors < 0), gamma)
 
     # creates permutation based on sets
     a, b, g = len(alpha), len(beta), len(gamma)
-    start = 0
-    P = np.zeros(len(colors), dtype=np.int32)
-    if a > 0: P[alpha] = np.arange(start, start + a)
-    start += a
-    if b > 0: P[beta] = np.arange(start, start + b)
-    start += b
-    if g > 0: P[gamma] = np.arange(start, start + g)
-    P = P.argsort()
+    P = np.concatenate((alpha, beta, gamma), dtype=np.int32)
     return P, a, b, g
