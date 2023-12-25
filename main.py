@@ -5,21 +5,22 @@ import scipy.sparse as spsp
 import matplotlib.pyplot as plt
 import lu
 import spectral_partitioning
+import kernighan_lin
 
 # calc time (f32)     2s            5s            24s
 datasets = ["arc130.mtx", "494_bus.mtx", "dwt_1007.mtx"]
-path_to_dataset = "./datasets/" + datasets[1]
+path_to_dataset = "./datasets/" + datasets[0]
 dtype = np.float32
-is_debug = False
+fseparate = kernighan_lin.kernighan_lin
 
 if __name__ == '__main__':
     # read data (graph)
     A = spsp.csr_matrix(scipy.io.mmread(path_to_dataset), dtype=dtype)
-    A = A + 3 * spsp.eye(A.shape[0])
+    A = A + 5 * spsp.eye(A.shape[0])
 
     # gets decomposition
     start = time.time()
-    P, L, U = lu.rec_partitioning(A, spectral_partitioning.get_separate_perm, is_debug=is_debug)
+    P, L, U = lu.rec_partitioning(A, fseparate)
     end = time.time()
     print("time decomposition [s] = ", end - start)
 
