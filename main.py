@@ -7,7 +7,7 @@ import lu
 import spectral_partitioning
 import kernighan_lin
 
-# calc time (f32)     2s            5s            24s
+# calc time (f32)     2s            5s              24s
 datasets = ["arc130.mtx", "494_bus.mtx", "dwt_1007.mtx"]
 path_to_dataset = "./datasets/" + datasets[0]
 dtype = np.float32
