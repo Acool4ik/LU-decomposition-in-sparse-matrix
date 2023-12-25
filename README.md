@@ -1,8 +1,7 @@
 ## lu decomposition in sparse matrix
 
 ### spectral partitioning small dataset
-![fun](https://github.com/Acool4ik/LU-decomposition-in-sparse-
-matrix/blob/master/images/report1.png)
+![fun](https://github.com/Acool4ik/LU-decomposition-in-sparse-matrix/blob/master/images/report1.png)
 
 ### spectral partitioning medium dataset
 ![fun](https://github.com/Acool4ik/LU-decomposition-in-sparse-matrix/blob/master/images/report2.png)
