@@ -9,7 +9,7 @@ import kernighan_lin
 
 # calc time (f32)     2s            5s              24s
 datasets = ["arc130.mtx", "494_bus.mtx", "dwt_1007.mtx"]
-path_to_dataset = "./datasets/" + datasets[0]
+path_to_dataset = "./datasets/" + datasets[2]
 dtype = np.float32
 fseparate = kernighan_lin.kernighan_lin
 
@@ -26,17 +26,25 @@ if __name__ == '__main__':
 
     # checks accuracy
     LU = L.dot(U)
-    PLUP = LU[P, :][:, P]
+    PLUP = LU[P, :][:, P].copy()
     print("norm(A) = ", spsp.linalg.norm(A, ord='fro'))
     print("norm(LU) = ", spsp.linalg.norm(LU, ord='fro'))
     print("norm(P(LU)P - A) = ", spsp.linalg.norm(PLUP - A, ord='fro'))
 
     # shows plot (report)
     data = [A, LU, PLUP, L, U, PLUP - A]
-    labels = ["A", "LU", "P(LU)P", "L", "U", "P(LU)P - A"]
+    lab1 = "A, norm = " + str(np.round(spsp.linalg.norm(A, ord='fro'), 1))
+    lab2 = "LU, norm = " + str(np.round(spsp.linalg.norm(LU, ord='fro'), 1))
+    lab3 = "P(LU)P, norm = " + str(np.round(spsp.linalg.norm(PLUP, ord='fro'), 1))
     fig, axs = plt.subplots(2, len(data) // 2)
+
+    n = A.shape[0]
+    subtitle = ("time decomposition [s] = " + str(np.round(end - start, 1)) + ", dataset: "
+                + str(n) + "x" + str(n) + " vertexes, nnz = " + str(A.nnz) +
+                ", method: kernighan_lin")
+    fig.suptitle(subtitle)
+
     for i in range(2):
         for j in range(len(data) // 2):
-            axs[i, j].spy(data[i * 3 + j], aspect='equal', marker='.', markersize=2, precision=1e-5)
-            axs[i, j].set_title(labels[i * 3 + j])
+            axs[i, j].spy(data[i * 3 + j], aspect='equal', marker='.', markersize=4, precision=1e-5)
     plt.show()
